@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+from decouple import config
+import dj_database_url
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'crispy_forms',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +61,7 @@ ROOT_URLCONF = 'tensorai.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -71,20 +76,35 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'tensorai.wsgi.application'
 
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
+#login stuff
+LOGIN_REDIRECT_URL = '/home'
+LOGOUT_REDIRECT_URL = '/success'
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
+#DB used in docker
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'HOST': 'db', # set in docker-compose.yml
+        'NAME': 'ddscbluae8rnc5',
+        'USER': 'mfdhtihomdddrf',
+        'PASSWORD': '25aab99b2b7b9514b125cafa9033fcae12dd97964e05ac0f8a0e06a954bed483',
+        'HOST': 'ec2-54-225-227-125.compute-1.amazonaws.com', # set in docker-compose.yml
         'PORT': 5432 # default postgres port
     }
 }
 
+#used for local
+#DATABASES = {
+#    'default': dj_database_url.config(
+#        default=config('DATABASE_URL')
+#        )
+#    }
+
+ALLOWED_HOSTS = ['localhost','127.0.0.1']
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
