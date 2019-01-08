@@ -11,6 +11,8 @@ gunicorn = "*"
 psycopg2-binary = "*"
 python-decouple = "*"
 whitenoise = "*"
+django-computed-property = "*"
+watchdog = "*"
 
 [requires]
 python_version = "3.6"
