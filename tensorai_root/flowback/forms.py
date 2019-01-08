@@ -2,7 +2,6 @@ from django import forms
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from flowback.models import Well_Profile, Well_Data
-#from flowback.utils.choices import well_choice_gen
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field, Fieldset
 from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions
@@ -12,7 +11,7 @@ class CrispyModelForm(forms.ModelForm):
         model = Well_Profile
         fields = '__all__'
         widgets = {
-            'well_name': forms.TextInput(attrs={'placeholder': 'Please Enter Well Name', 'required': True}),
+        'well_name': forms.TextInput(attrs={'placeholder': 'Please Enter Well Name', 'required': True}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -32,7 +31,7 @@ class CrispyModelForm(forms.ModelForm):
 class CrispyDataForm(forms.ModelForm):
     class Meta:
         model = Well_Data
-        fields = '__all__'
+        fields = ('data_well_name','data_hour','data_tubing_psi','data_csg_psi','data_choke_size','data_sep_psi','data_oil_rate','data_water_rate','data_gas_rate','data_flowline_psi','data_chlorides','data_sand_percent','data_h2s','data_remarks')
         widgets = {
             #'well_name': forms.ChoiceField(choices=well_choice_gen()),
         }

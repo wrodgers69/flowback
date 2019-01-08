@@ -5,6 +5,8 @@ import datetime
 from tensorai.settings import *
 from django.core.validators import RegexValidator
 from django.contrib import admin
+import computed_property
+from computed_property import ComputedTextField
 
 # Create your models here.
 class Well_Profile(models.Model):
@@ -15,7 +17,7 @@ class Well_Profile(models.Model):
     ('Concho', 'Concho'),
     )
     company = models.CharField(max_length=100, choices=company_choices, default='')
-    well_name = models.CharField(primary_key=True, max_length=50, blank = True, default='')
+    well_name = models.CharField(primary_key=True, max_length=50, blank = False, default='Example 1h')
     API10 = models.CharField(max_length=10, validators=[RegexValidator(r'^\d{1,10}$')])
     engineer = models.ManyToManyField(User)
     prod_path_choices = (
@@ -76,17 +78,6 @@ class Well_Profile(models.Model):
     def __str__(self):
         return self.well_name
 
-    #"recently" is being defined as within 1 day of "now"
-    def was_updated_recently(self):
-        now = timezone.now()
-        return now - datetime.timedelta(days=1) <= self.date_updated <= now
-
-    def was_created_recently(self):
-        now = timezone.now()
-        return now - datetime.timedelta(days=1) <= self.date_created <= now
-
-    pass
-
 class Well_Data(models.Model):
     data_well_name = models.ForeignKey(Well_Profile, on_delete=models.CASCADE)
     #data_date = models.DateTimeField()
@@ -103,55 +94,46 @@ class Well_Data(models.Model):
     data_sand_percent = models.IntegerField()
     data_h2s = models.IntegerField()
     data_remarks = models.CharField(max_length=300, default="")
-
-    def calc_total_fluid_hrly(self):
-        total_fluid_hrly = (self.data_oil_rate + self.data_water_rate)
-        return total_fluid_hrly
-    def calc_oil_24hr(self):
-        oil_24hr = (self.data_oil_rate)*24
-        return oil_24hr
-    def calc_water_24hr(self):
-        water_24hr = (self.data_water_rate)*24
-        return water_24hr
-    def calc_total_fluid_daily(self):
-        total_fluid_24hr = (self.oil_24hr)+(self.water_24hr)
-        return total_fluid_24hr
-    def calc_gor(self):
-        gor = (self.data_gas_rate)/(self.oil_24hr)*1000
-        return gor
-    def calc_wcut(self):
-        wcut = (self.data_water_rate)/(self.total_fluid_hrly)
-        return wcut
-#    def calc_liquid_pi(self):
-#        res_psi = Well_Data.initial_res_psi
-#        liquid_productivity_index = ((self.total_fluid_hrly)/(res_psi-self.data_csg_psi))
-#        return liquid_productivity_index
-#    def calc_oil_pi(self):
-#        res_psi = Well_Data.initial_res_psi
-#        oil_productivity_index = ((self.data_oil_rate)/(res_psi-self.data_csg_psi))
-#    def calc_inverse_pi(self):
-#        inverse_oil_pi = 1/(self.oil_productivity_index)
-#        return inverse_oil_pi
-    total_fluid_hrly = property(calc_total_fluid_hrly)
-    total_fluid_24hr = property(calc_total_fluid_daily)
-    gor = property(calc_gor)
-    wcut = property(calc_wcut)
-    #cumulative_fluid = models.IntegerField(editable=False)
-    water_24hr = property(calc_water_24hr)
-    oil_24hr = property(calc_oil_24hr)
-    #liquid_productivity_index = property(calc_liquid_pi)
-    #oil_productivity_index = property(calc_oil_pi)
-    #inverse_oil_pi = property(calc_inverse_pi)
-    #inverse_fluid_pi = property(calc_inverse_pi)
-    def calc_name_hour(self):
-        name_hour = "%s%s%s" % (str(self.data_well_name), " flowback hour= ", str(self.data_hour))
-        return name_hour
-    name_hour= property(calc_name_hour)
-
-    def __str__(self):
+    def __str__(self, *args, **kwargs):
         return "%s%s%s" % (str(self.data_well_name), " flowback hour= ", str(self.data_hour))
+        #return "%s%s%s" % (str(self.data_well_name), " flowback hour= ", str(self.data_hour))
+
+#compute_property methology
+    oil_bpd = computed_property.ComputedIntegerField(compute_from='oil_24')
+    def oil_24(self):
+        return self.data_oil_rate*24
+
+    water_bpd = computed_property.ComputedIntegerField(compute_from='water_24')
+    def water_24(self):
+        return self.data_water_rate*24
+
+    total_fluid_bpd = computed_property.ComputedIntegerField(compute_from='calc_total_fluid_daily')
+    def calc_total_fluid_daily(self):
+        return (self.data_oil_rate*24 + self.data_water_rate*24)
+
+    total_fluid_bph = computed_property.ComputedIntegerField(compute_from='calc_total_fluid_daily')
+    def calc_total_fluid_daily(self):
+        return (self.data_oil_rate*24 + self.data_water_rate*24)
+
+    gas_oil_ratio = computed_property.ComputedIntegerField(compute_from='calc_gor')
+    def calc_gor(self):
+        return (self.data_gas_rate)/(self.data_oil_rate*24)*1000
+
+    water_cut = computed_property.ComputedIntegerField(compute_from='calc_wcut')
+    def calc_wcut(self):
+        return ((self.data_water_rate)/((self.data_oil_rate)+(self.data_water_rate)))*100
+
+    def calc_name_hour(self):
+        return "%s%s%s" % (str(self.data_well_name), " flowback hour= ", str(self.data_hour))
+    #well_name_w_hr = property(calc_name_hour)
+    #well_name_w_hr = data_well_name
+#    well_name_w_hr = ComputedTextField(compute_from='calc_name_hour')
+#    @property
+#    def calc_name_hour(self):
+#        return "%s%s%s" % (str(self.data_well_name), " flowback hour= ", str(self.data_hour))
 
 
 class Well_Data_Calc(admin.ModelAdmin):
-    list_display = ('name_hour','total_fluid_hrly', 'total_fluid_24hr','oil_24hr', 'water_24hr', 'gor', 'wcut')
-    fieldsets = [("Calculated data", {"fields":(("Well Name and Flowback Hour", "Total Fluid (bph)", "Total Fluid (bpd)"), "Oil Rate (bpd)", "Water Rate (bpd)", "GOR (scf/bbl)", "Water Cut (%)")})]
+    list_display = ('data_well_name', 'data_hour', 'data_tubing_psi', 'data_csg_psi', 'data_choke_size', 'data_sep_psi', 'data_oil_rate', 'data_water_rate', 'data_gas_rate', 'data_flowline_psi', 'data_chlorides', 'data_sand_percent', 'data_h2s', 'data_remarks', 'total_fluid_bph', 'total_fluid_bpd', 'oil_bpd', 'water_bpd', 'gas_oil_ratio', 'water_cut')
+    fieldsets = [("Enter Hourly Data Here:", {"fields":("data_well_name", "data_hour", "data_tubing_psi", "data_csg_psi", "data_choke_size", "data_sep_psi", "data_oil_rate", "data_water_rate", "data_gas_rate", "data_flowline_psi", "data_chlorides", "data_sand_percent", "data_h2s", "data_remarks")})
+    ]
