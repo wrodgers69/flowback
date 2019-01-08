@@ -2,6 +2,7 @@ version: '3.7'
 
 services:
   app:
+
     container_name: flowback_app
     build: .
     volumes:
@@ -16,6 +17,7 @@ services:
     links:
       - db
   db:
+
     container_name: flowback_db
     image: postgres:latest
     env_file: .env
@@ -24,5 +26,5 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
 
-volumes:
-  postgres_data:
+#volumes:
+#  postgres_data:
