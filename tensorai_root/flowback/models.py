@@ -94,7 +94,7 @@ class Well_Data(models.Model):
     data_sand_percent = models.IntegerField()
     data_h2s = models.IntegerField()
     data_remarks = models.CharField(max_length=300, default="")
-    def __str__(self, *args, **kwargs):
+    def __str__(self):
         return "%s%s%s" % (str(self.data_well_name), " flowback hour= ", str(self.data_hour))
         #return "%s%s%s" % (str(self.data_well_name), " flowback hour= ", str(self.data_hour))
 
